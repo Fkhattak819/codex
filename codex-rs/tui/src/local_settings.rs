@@ -29,6 +29,7 @@ impl From<&Config> for LocalSettings {
                 animations: config.animations,
                 whimsy: config.tui_whimsy,
                 show_tooltips: config.show_tooltips,
+                show_server_version_notice: config.tui_show_server_version_notice,
                 auto_recap: config.tui_auto_recap,
                 auto_model_routing: config.tui_auto_model_routing,
                 disable_paste_burst: Some(config.disable_paste_burst),
