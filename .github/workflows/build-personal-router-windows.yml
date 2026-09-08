@@ -1,0 +1,95 @@
+name: Build personal Codex router for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-personal-router-windows.yml"
+      - "codex-rs/**"
+      - "scripts/install-personal-router-windows.ps1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-router-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Windows x64 router
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: codex-rs
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_TERM_COLOR: always
+      TARGET: x86_64-pc-windows-msvc
+
+    steps:
+      - name: Check out the fork
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          targets: ${{ env.TARGET }}
+
+      - name: Expose the MSVC build environment
+        uses: ./.github/actions/setup-msvc-env
+        with:
+          target: ${{ env.TARGET }}
+
+      - name: Build the router and Windows sandbox helpers
+        shell: pwsh
+        run: |
+          $env:LIBSQLITE3_FLAGS = "SQLITE_DISABLE_INTRINSIC"
+          cargo build `
+            --target $env:TARGET `
+            --release `
+            --bin codex `
+            --bin codex-command-runner `
+            --bin codex-windows-sandbox-setup
+
+      - name: Create the install bundle
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        run: |
+          $release = Join-Path $env:GITHUB_WORKSPACE "codex-rs\target\$env:TARGET\release"
+          $stage = Join-Path $env:RUNNER_TEMP "codex-router-windows-x64"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          Copy-Item (Join-Path $release "codex.exe") $stage
+          Copy-Item (Join-Path $release "codex-command-runner.exe") $stage
+          Copy-Item (Join-Path $release "codex-windows-sandbox-setup.exe") $stage
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "scripts\install-personal-router-windows.ps1") $stage
+
+          @(
+            "Personal Codex router build"
+            "Commit: $env:GITHUB_SHA"
+            "Run install-personal-router-windows.ps1 from PowerShell, then open a new terminal."
+            "Use codex for the router build and codex-official for OpenAI's installed CLI."
+          ) | Set-Content -Encoding utf8NoBOM (Join-Path $stage "README.txt")
+
+          Get-FileHash (Join-Path $stage "codex.exe") -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLowerInvariant())  codex.exe" } |
+            Set-Content -Encoding ascii (Join-Path $stage "SHA256SUMS.txt")
+
+          Compress-Archive `
+            -Path (Join-Path $stage "*") `
+            -DestinationPath (Join-Path $env:RUNNER_TEMP "codex-router-windows-x64.zip") `
+            -Force
+
+      - name: Upload the install bundle
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codex-router-windows-x64
+          path: ${{ runner.temp }}/codex-router-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
