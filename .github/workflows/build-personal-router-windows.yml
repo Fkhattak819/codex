@@ -46,7 +46,7 @@ jobs:
         with:
           target: ${{ env.TARGET }}
 
-      - name: Build the router and Windows sandbox helpers
+      - name: Build the router and runtime helpers
         shell: pwsh
         run: |
           $env:LIBSQLITE3_FLAGS = "SQLITE_DISABLE_INTRINSIC"
@@ -54,6 +54,7 @@ jobs:
             --target $env:TARGET `
             --release `
             --bin codex `
+            --bin codex-code-mode-host `
             --bin codex-command-runner `
             --bin codex-windows-sandbox-setup
 
@@ -66,6 +67,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
           Copy-Item (Join-Path $release "codex.exe") $stage
+          Copy-Item (Join-Path $release "codex-code-mode-host.exe") $stage
           Copy-Item (Join-Path $release "codex-command-runner.exe") $stage
           Copy-Item (Join-Path $release "codex-windows-sandbox-setup.exe") $stage
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE "scripts\install-personal-router-windows.ps1") $stage
@@ -77,8 +79,9 @@ jobs:
             "Use codex for the router build and codex-official for OpenAI's installed CLI."
           ) | Set-Content -Encoding utf8NoBOM (Join-Path $stage "README.txt")
 
-          Get-FileHash (Join-Path $stage "codex.exe") -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLowerInvariant())  codex.exe" } |
+          Get-FileHash (Join-Path $stage "*.exe") -Algorithm SHA256 |
+            Sort-Object Path |
+            ForEach-Object { "$($_.Hash.ToLowerInvariant())  $(Split-Path $_.Path -Leaf)" } |
             Set-Content -Encoding ascii (Join-Path $stage "SHA256SUMS.txt")
 
           Compress-Archive `

@@ -26,7 +26,7 @@ turn it back on after choosing a model manually. See the [router documentation](
 for configuration, policy details, and source-build instructions.
 
 The [Windows build workflow](./.github/workflows/build-personal-router-windows.yml) produces a
-ready-to-install artifact from this fork.
+ready-to-install artifact from this fork, including the Code Mode host and Windows sandbox helpers.
 
 ## Quickstart
 

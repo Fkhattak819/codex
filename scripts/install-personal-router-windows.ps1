@@ -20,6 +20,7 @@ if ($Uninstall) {
 
 $requiredFiles = @(
     "codex.exe"
+    "codex-code-mode-host.exe"
     "codex-command-runner.exe"
     "codex-windows-sandbox-setup.exe"
 )
