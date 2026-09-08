@@ -41,6 +41,11 @@ jobs:
         with:
           targets: ${{ env.TARGET }}
 
+      - name: Configure rusty_v8 artifact overrides and verify checksums
+        uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: ${{ env.TARGET }}
+
       - name: Expose the MSVC build environment
         uses: ./.github/actions/setup-msvc-env
         with:
