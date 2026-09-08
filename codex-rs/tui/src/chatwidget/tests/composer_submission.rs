@@ -50,7 +50,7 @@ async fn auto_router_changes_model_per_turn_without_changing_thread() {
         (
             2,
             "implement pagination for the users API",
-            "gpt-5.6-terra",
+            "gpt-6-astra",
             ReasoningEffortConfig::Low,
         ),
         (

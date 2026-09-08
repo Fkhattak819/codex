@@ -18,8 +18,9 @@ tokens to classify a prompt.
 | Prompt shape | Route |
 | --- | --- |
 | Small edit, lookup, typo, or rename | Sol with low reasoning |
-| Ordinary implementation, integration, or scoped refactor | Terra with low or medium reasoning |
-| Architecture, concurrency, destructive work, repeated failures, or ambiguous production work | Astra with low or medium reasoning |
+| Moderate analysis or scoped debugging | Terra with low or medium reasoning |
+| Code implementation, integration, or refactoring | Astra with low reasoning, or medium when broad or difficult |
+| Architecture, concurrency, destructive work, repeated failures, or ambiguous production work | Astra with medium reasoning |
 
 Automatic routing is enabled by default. In the TUI, open `/model` and select **Auto Router** to
 turn it back on after choosing a model manually. See the [router documentation](./docs/auto-model-router.md)

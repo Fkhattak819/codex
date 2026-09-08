@@ -98,12 +98,19 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
         &prompt,
         &[
             "implement ",
+            "implementation",
+            "write code",
+            "code this",
             "add a feature",
             "add an endpoint",
+            "build a feature",
+            "build this feature",
             "api endpoint",
             "pagination",
             "integrate ",
             "refactor ",
+            "fix the bug",
+            "fix this bug",
             "database change",
             "repository abstraction",
             "existing design",
@@ -119,6 +126,20 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
             "entire subsystem",
             "across the codebase",
             "end to end",
+            "complex implementation",
+            "difficult implementation",
+            "tough implementation",
+        ],
+    );
+    let difficult = contains_any(
+        &prompt,
+        &[
+            "complex feature",
+            "difficult feature",
+            "tough feature",
+            "hard task",
+            "complex task",
+            "challenging task",
         ],
     );
     let ambiguous = contains_any(
@@ -201,6 +222,9 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
         signals.scope = 3;
         signals.complexity = signals.complexity.max(2);
     }
+    if difficult {
+        signals.complexity = signals.complexity.max(3);
+    }
     if word_count >= 60 {
         signals.scope = signals.scope.max(2);
     }
@@ -237,7 +261,8 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
         signals.complexity = signals.complexity.max(3);
     }
 
-    let hard_astra_floor = architecture
+    let hard_astra_floor = implementation
+        || architecture
         || concurrency
         || destructive
         || repeated_failure
@@ -246,7 +271,11 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
     if hard_astra_floor || signals.total() >= 11 {
         let effort = if signals.risk == 4 && signals.ambiguity == 4 {
             ReasoningEffort::High
-        } else if signals.ambiguity >= 2 || signals.risk >= 3 {
+        } else if signals.complexity >= 3
+            || signals.scope >= 3
+            || signals.ambiguity >= 2
+            || signals.risk >= 3
+        {
             ReasoningEffort::Medium
         } else {
             ReasoningEffort::Low
@@ -255,7 +284,11 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
             route: AutoRoute::Astra,
             effort,
             signals,
-            reason: "high-impact or ambiguous engineering work",
+            reason: if implementation {
+                "code implementation"
+            } else {
+                "high-impact or ambiguous engineering work"
+            },
         };
     }
 
@@ -269,7 +302,7 @@ pub(crate) fn recommend(prompt: &str) -> RouteRecommendation {
             route: AutoRoute::Terra,
             effort,
             signals,
-            reason: "normal implementation or scoped debugging",
+            reason: "moderate analysis or scoped debugging",
         };
     }
 

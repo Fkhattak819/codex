@@ -6,8 +6,9 @@ the same Codex task.
 | Prompt shape | Route |
 | --- | --- |
 | Small mechanical edit, lookup, typo, or rename | Sol with low reasoning |
-| Ordinary implementation, integration, or scoped refactor | Terra with low or medium reasoning |
-| Architecture, concurrency, destructive work, repeated failures, or ambiguous production work | Astra with low or medium reasoning |
+| Moderate analysis or scoped debugging | Terra with low or medium reasoning |
+| Code implementation, integration, or refactoring | Astra with low reasoning, or medium when broad or difficult |
+| Architecture, concurrency, destructive work, repeated failures, or ambiguous production work | Astra with medium reasoning |
 
 High reasoning is reserved for prompts that combine severe risk with maximum ambiguity. The router
 does not select xhigh, max, or ultra by default.

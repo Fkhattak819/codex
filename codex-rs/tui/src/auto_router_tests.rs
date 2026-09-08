@@ -17,13 +17,37 @@ fn routes_small_mechanical_prompts_to_sol() {
 }
 
 #[test]
-fn routes_general_development_to_terra() {
+fn routes_code_implementation_to_astra_low() {
     for prompt in [
         "implement pagination for the users API",
         "refactor this service to use the repository abstraction",
+        "write code for the account settings screen",
+        "fix this bug in the checkout flow",
     ] {
         let recommendation = recommend(prompt);
-        assert_eq!(recommendation.route, AutoRoute::Terra, "prompt: {prompt}");
+        assert_eq!(recommendation.route, AutoRoute::Astra, "prompt: {prompt}");
+        assert_eq!(
+            recommendation.effort,
+            ReasoningEffort::Low,
+            "prompt: {prompt}"
+        );
+    }
+}
+
+#[test]
+fn routes_broad_code_implementation_to_astra_medium() {
+    for prompt in [
+        "implement this feature end to end across the codebase and update multiple files",
+        "handle this tough implementation",
+        "implement code for this difficult feature",
+    ] {
+        let recommendation = recommend(prompt);
+        assert_eq!(recommendation.route, AutoRoute::Astra, "prompt: {prompt}");
+        assert_eq!(
+            recommendation.effort,
+            ReasoningEffort::Medium,
+            "prompt: {prompt}"
+        );
     }
 }
 
@@ -59,8 +83,8 @@ fn resolves_current_model_slugs_by_family_name() {
         recommend("implement pagination for the users API"),
         &presets,
     )
-    .expect("Terra should resolve");
-    assert_eq!(decision.model, "gpt-5.6-terra");
+    .expect("Astra should resolve");
+    assert_eq!(decision.model, "gpt-6-astra");
 
     let decision = resolve(
         recommend("there is an intermittent deadlock in production; find and fix it"),
