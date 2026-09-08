@@ -9,6 +9,25 @@ If you want Codex in your code editor (VS Code, Cursor, Windsurf), <a href="http
 
 ---
 
+## Fahd's fork: Automatic model router
+
+This fork adds a local, deterministic router that selects a Codex model family and reasoning effort
+for each new interactive turn. It keeps the normal Codex CLI workflow and does not spend model
+tokens to classify a prompt.
+
+| Prompt shape | Route |
+| --- | --- |
+| Small edit, lookup, typo, or rename | Sol with low reasoning |
+| Ordinary implementation, integration, or scoped refactor | Terra with low or medium reasoning |
+| Architecture, concurrency, destructive work, repeated failures, or ambiguous production work | Astra with low or medium reasoning |
+
+Automatic routing is enabled by default. In the TUI, open `/model` and select **Auto Router** to
+turn it back on after choosing a model manually. See the [router documentation](./docs/auto-model-router.md)
+for configuration, policy details, and source-build instructions.
+
+The [Windows build workflow](./.github/workflows/build-personal-router-windows.yml) produces a
+ready-to-install artifact from this fork.
+
 ## Quickstart
 
 ### Installing and running Codex CLI
