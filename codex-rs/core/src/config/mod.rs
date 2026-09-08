@@ -51,6 +51,8 @@ use codex_config::types::SessionPickerViewMode;
 use codex_config::types::ToolSuggestConfig;
 use codex_config::types::ToolSuggestDisabledTool;
 use codex_config::types::ToolSuggestDiscoverable;
+#[cfg(test)]
+use codex_config::types::Tui;
 use codex_config::types::TuiKeymap;
 use codex_config::types::TuiNotificationSettings;
 use codex_config::types::TuiPetAnchor;
@@ -291,6 +293,10 @@ pub(crate) async fn test_config() -> Config {
     Config::load_from_base_config_with_overrides(
         ConfigToml {
             model: Some("gpt-5.5".to_string()),
+            tui: Some(Tui {
+                auto_model_routing: false,
+                ..Default::default()
+            }),
             ..Default::default()
         },
         ConfigOverrides::default(),
@@ -750,6 +756,9 @@ pub struct Config {
 
     /// Generate automatic TUI recaps. Manual `/recap` remains available when disabled.
     pub tui_auto_recap: bool,
+
+    /// Route newly submitted TUI turns among Sol, Terra, and Astra.
+    pub tui_auto_model_routing: bool,
 
     /// Persisted startup availability NUX state for model tooltips.
     pub model_availability_nux: ModelAvailabilityNuxConfig,
@@ -4355,6 +4364,11 @@ impl Config {
             tui_whimsy: cfg.tui.as_ref().map(|t| t.whimsy).unwrap_or(true),
             show_tooltips: cfg.tui.as_ref().map(|t| t.show_tooltips).unwrap_or(true),
             tui_auto_recap: cfg.tui.as_ref().map(|t| t.auto_recap).unwrap_or(/*default*/ true),
+            tui_auto_model_routing: cfg
+                .tui
+                .as_ref()
+                .map(|t| t.auto_model_routing)
+                .unwrap_or(/*default*/ true),
             model_availability_nux: cfg
                 .tui
                 .as_ref()

@@ -1051,6 +1051,9 @@ pub(crate) enum AppEvent {
     /// Update the current model slug in the running app and widget.
     UpdateModel(String),
 
+    /// Enable or disable deterministic per-turn model routing and persist the preference.
+    SetAutoModelRouting(bool),
+
     /// Update the current personality in the running app and widget.
     UpdatePersonality(Personality),
 

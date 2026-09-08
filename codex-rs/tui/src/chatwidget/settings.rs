@@ -300,7 +300,25 @@ impl ChatWidget {
         self.refresh_model_dependent_surfaces();
     }
 
+    pub(crate) fn auto_model_router_enabled(&self) -> bool {
+        self.auto_model_router_enabled
+    }
+
+    pub(crate) fn set_auto_model_router_enabled(&mut self, enabled: bool) {
+        self.auto_model_router_enabled = enabled;
+        self.auto_model_router_failure_reported = false;
+        if !enabled {
+            self.last_auto_route = None;
+        }
+        self.refresh_model_dependent_surfaces();
+    }
+
     pub(crate) fn current_model(&self) -> &str {
+        if self.auto_model_router_enabled
+            && let Some((model, _)) = self.last_auto_route.as_ref()
+        {
+            return model;
+        }
         if !self.collaboration_modes_enabled() {
             return self.current_collaboration_mode.model();
         }
@@ -444,6 +462,11 @@ impl ChatWidget {
     }
 
     pub(super) fn effective_reasoning_effort(&self) -> Option<ReasoningEffortConfig> {
+        if self.auto_model_router_enabled
+            && let Some((_, effort)) = self.last_auto_route.as_ref()
+        {
+            return Some(effort.clone());
+        }
         if !self.collaboration_modes_enabled() {
             return self.current_collaboration_mode.reasoning_effort();
         }
@@ -455,13 +478,24 @@ impl ChatWidget {
     }
 
     pub(crate) fn effective_collaboration_mode(&self) -> CollaborationMode {
-        if !self.collaboration_modes_enabled() {
-            return self.current_collaboration_mode.clone();
+        let effective = if !self.collaboration_modes_enabled() {
+            self.current_collaboration_mode.clone()
+        } else {
+            self.active_collaboration_mask.as_ref().map_or_else(
+                || self.current_collaboration_mode.clone(),
+                |mask| self.current_collaboration_mode.apply_mask(mask),
+            )
+        };
+        if self.auto_model_router_enabled
+            && let Some((model, effort)) = self.last_auto_route.as_ref()
+        {
+            return effective.with_updates(
+                Some(model.clone()),
+                Some(Some(effort.clone())),
+                /*developer_instructions*/ None,
+            );
         }
-        self.active_collaboration_mask.as_ref().map_or_else(
-            || self.current_collaboration_mode.clone(),
-            |mask| self.current_collaboration_mode.apply_mask(mask),
-        )
+        effective
     }
 
     pub(super) fn refresh_model_display(&mut self) {

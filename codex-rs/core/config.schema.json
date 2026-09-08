@@ -3852,6 +3852,11 @@
           "description": "Enable animations (welcome screen, shimmer effects, spinners). Defaults to `true`.",
           "type": "boolean"
         },
+        "auto_model_routing": {
+          "default": true,
+          "description": "Route each newly submitted TUI turn among the Sol, Terra, and Astra model families. Defaults to `true`.",
+          "type": "boolean"
+        },
         "auto_recap": {
           "default": true,
           "description": "Generate automatic conversation recaps when the terminal is unfocused. Defaults to `true`. Disabling this leaves `/recap` available on demand.",

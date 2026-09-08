@@ -1259,6 +1259,7 @@ fn config_toml_deserializes_model_availability_nux() {
             whimsy: true,
             show_tooltips: true,
             auto_recap: true,
+            auto_model_routing: true,
             disable_paste_burst: None,
             vim_mode_default: false,
             question_esc_back: true,
@@ -1297,6 +1298,32 @@ status_line_use_colors = false
         !cfg.tui
             .expect("tui config should deserialize")
             .status_line_use_colors
+    );
+}
+
+#[test]
+fn config_toml_defaults_auto_model_routing_on_and_accepts_opt_out() {
+    let default_config: ConfigToml =
+        toml::from_str("[tui]\n").expect("TUI config should deserialize");
+    assert!(
+        default_config
+            .tui
+            .expect("TUI settings should be present")
+            .auto_model_routing
+    );
+
+    let disabled_config: ConfigToml = toml::from_str(
+        r#"
+[tui]
+auto_model_routing = false
+"#,
+    )
+    .expect("auto routing opt-out should deserialize");
+    assert!(
+        !disabled_config
+            .tui
+            .expect("TUI settings should be present")
+            .auto_model_routing
     );
 }
 
@@ -4274,6 +4301,7 @@ fn tui_config_missing_notifications_field_defaults_to_enabled() {
             whimsy: true,
             show_tooltips: true,
             auto_recap: true,
+            auto_model_routing: true,
             disable_paste_burst: None,
             vim_mode_default: false,
             question_esc_back: true,

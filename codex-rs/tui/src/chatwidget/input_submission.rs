@@ -319,7 +319,7 @@ impl ChatWidget {
             }
         }
 
-        let effective_mode = self.effective_collaboration_mode();
+        let mut effective_mode = self.effective_collaboration_mode();
         if effective_mode.model().trim().is_empty() {
             self.add_error_message(
                 "Thread model is unavailable. Wait for the thread to finish syncing or choose a model before sending input.".to_string(),
@@ -335,6 +335,49 @@ impl ChatWidget {
                 &history_record,
             ));
             return (false, None);
+        }
+
+        // A steer is attached to the active turn and cannot carry new model settings. Route only
+        // submissions that start a new turn; every other turn setting remains unchanged below.
+        if render_in_history && self.auto_model_router_enabled {
+            let recommendation = crate::auto_router::recommend(&text);
+            let decision = self
+                .model_catalog
+                .try_list_models()
+                .ok()
+                .and_then(|presets| crate::auto_router::resolve(recommendation, &presets));
+            if let Some(decision) = decision {
+                effective_mode = effective_mode.with_updates(
+                    Some(decision.model.clone()),
+                    Some(Some(decision.effort.clone())),
+                    /*developer_instructions*/ None,
+                );
+                let route_signature = (decision.model.clone(), decision.effort.clone());
+                if self.last_auto_route.as_ref() != Some(&route_signature) {
+                    let mut message = decision.concise_label();
+                    if let Some(fallback) = decision.fallback.as_ref() {
+                        message.push_str(&format!(" ({fallback})"));
+                    }
+                    self.add_info_message(message, /*hint*/ None);
+                }
+                tracing::debug!(
+                    route = decision.route.label(),
+                    model = decision.model,
+                    effort = decision.effort.as_str(),
+                    reason = decision.reason,
+                    fallback = decision.fallback,
+                    "auto-routed user turn"
+                );
+                self.last_auto_route = Some(route_signature);
+                self.auto_model_router_failure_reported = false;
+                self.refresh_model_dependent_surfaces();
+            } else if !self.auto_model_router_failure_reported {
+                self.add_error_message(
+                    "Auto routing could not find Sol, Terra, or Astra in the current model catalog; using the selected model."
+                        .to_string(),
+                );
+                self.auto_model_router_failure_reported = true;
+            }
         }
 
         self.maybe_apply_ide_context(&mut items);

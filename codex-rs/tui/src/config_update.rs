@@ -85,6 +85,7 @@ pub(crate) fn build_model_selection_edits(
     vec![
         replace_config_value("model", serde_json::json!(model)),
         effort_edit,
+        replace_config_value("tui.auto_model_routing", serde_json::json!(false)),
     ]
 }
 

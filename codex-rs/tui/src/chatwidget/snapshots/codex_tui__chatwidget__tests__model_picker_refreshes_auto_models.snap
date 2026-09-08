@@ -3,10 +3,12 @@ source: tui/src/chatwidget/tests/popups_and_settings.rs
 expression: "render_bottom_popup(&chat, 80)"
 ---
   Select Model
-  Pick a quick auto mode or browse all models.
+  Use per-turn routing or choose one model for every turn.
 
   1. codex-auto-test       Auto model
 › 2. All models (current)  Choose a specific model and reasoning level
                            (current: gpt-5.2)
+  3. Auto Router           Choose Sol, Terra, or Astra and reasoning effort
+                           for each new turn
 
   Press enter to confirm or esc to go back

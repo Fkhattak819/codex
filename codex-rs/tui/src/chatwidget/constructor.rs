@@ -36,6 +36,7 @@ impl ChatWidget {
         let model = model.filter(|m| !m.trim().is_empty());
         let mut config = config;
         config.model = model.clone();
+        let auto_model_router_enabled = config.tui_auto_model_routing;
         let prevent_idle_sleep = config.features.enabled(Feature::PreventIdleSleep);
         let placeholder = PLACEHOLDER.to_string();
         let side_placeholder = SIDE_PLACEHOLDER.to_string();
@@ -124,6 +125,9 @@ impl ChatWidget {
             requires_openai_auth,
             has_codex_backend_auth,
             model_catalog,
+            auto_model_router_enabled,
+            last_auto_route: None,
+            auto_model_router_failure_reported: false,
             model_popup_request_id: None,
             permission_popup_request_id: None,
             worktree_popup_request_id: None,

@@ -105,6 +105,7 @@ impl ChatWidget {
         }
 
         auto_presets.sort_by_key(|preset| Self::auto_model_order(&preset.model));
+        let router_enabled = self.auto_model_router_enabled();
         let mut items: Vec<SelectionItem> = auto_presets
             .into_iter()
             .map(|preset| {
@@ -139,7 +140,7 @@ impl ChatWidget {
                 SelectionItem {
                     name: model.clone(),
                     description,
-                    is_current: model.as_str() == current_model,
+                    is_current: !router_enabled && model.as_str() == current_model,
                     is_default: preset.is_default,
                     actions,
                     dismiss_on_select: !requires_advanced_selection,
@@ -154,7 +155,7 @@ impl ChatWidget {
                 tx.send(AppEvent::OpenAllModelsPopup);
             })];
 
-            let is_current = !items.iter().any(|item| item.is_current);
+            let is_current = !router_enabled && !items.iter().any(|item| item.is_current);
             let description = Some(format!(
                 "Choose a specific model and reasoning level (current: {current_label})"
             ));
@@ -169,9 +170,11 @@ impl ChatWidget {
             });
         }
 
+        items.push(self.auto_router_selection_item());
+
         let header = self.model_menu_header(
             "Select Model",
-            "Pick a quick auto mode or browse all models.",
+            "Use per-turn routing or choose one model for every turn.",
         );
         self.show_model_selection_view(SelectionViewParams {
             view_id: Some(MODEL_SELECTION_VIEW_ID),
@@ -231,7 +234,8 @@ impl ChatWidget {
         for preset in presets.into_iter() {
             let description =
                 (!preset.description.is_empty()).then_some(preset.description.to_string());
-            let is_current = preset.model.as_str() == self.current_model();
+            let is_current =
+                !self.auto_model_router_enabled() && preset.model.as_str() == self.current_model();
             let single_supported_effort = preset.supported_reasoning_efforts.len() == 1;
             let preset_for_action = preset.clone();
             let actions: Vec<SelectionAction> = vec![Box::new(move |tx| {
@@ -251,6 +255,7 @@ impl ChatWidget {
                 ..Default::default()
             });
         }
+        items.push(self.auto_router_selection_item());
 
         let header = self.model_menu_header(
             "Select Model and Effort",
@@ -263,6 +268,22 @@ impl ChatWidget {
             header,
             ..Default::default()
         });
+    }
+
+    fn auto_router_selection_item(&self) -> SelectionItem {
+        let actions: Vec<SelectionAction> = vec![Box::new(|tx| {
+            tx.send(AppEvent::SetAutoModelRouting(true));
+        })];
+        SelectionItem {
+            name: "Auto Router".to_string(),
+            description: Some(
+                "Choose Sol, Terra, or Astra and reasoning effort for each new turn".to_string(),
+            ),
+            is_current: self.auto_model_router_enabled(),
+            actions,
+            dismiss_on_select: true,
+            ..Default::default()
+        }
     }
 
     fn model_selection_actions(

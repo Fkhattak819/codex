@@ -746,6 +746,11 @@ pub struct Tui {
     #[serde(default = "default_true")]
     pub auto_recap: bool,
 
+    /// Route each newly submitted TUI turn among the Sol, Terra, and Astra model families.
+    /// Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub auto_model_routing: bool,
+
     /// When true, disables burst-paste detection for typed input entirely.
     /// All characters are inserted as they are received, and no buffering
     /// or placeholder replacement will occur for fast keypress bursts.

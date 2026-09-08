@@ -34,6 +34,96 @@ fn assert_hidden_shell_payload_is_literal(op: Result<Op, TryRecvError>, payload:
 }
 
 #[tokio::test]
+async fn auto_router_changes_model_per_turn_without_changing_thread() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(Some("gpt-5.6-sol")).await;
+    let thread_id = ThreadId::new();
+    chat.thread_id = Some(thread_id);
+    chat.set_auto_model_router_enabled(true);
+
+    for (index, prompt, expected_model, expected_effort) in [
+        (
+            1,
+            "change the button padding to 12px",
+            "gpt-5.6-sol",
+            ReasoningEffortConfig::Low,
+        ),
+        (
+            2,
+            "implement pagination for the users API",
+            "gpt-5.6-terra",
+            ReasoningEffortConfig::Low,
+        ),
+        (
+            3,
+            "there is an intermittent deadlock in production; find and fix it",
+            "gpt-6-astra",
+            ReasoningEffortConfig::Medium,
+        ),
+    ] {
+        chat.submit_user_message(UserMessage::from(prompt));
+        let (model, effort, collaboration_mode) = assert_matches!(
+            next_submit_op(&mut op_rx),
+            Op::UserTurn {
+                model,
+                effort,
+                collaboration_mode,
+                ..
+            } => (model, effort, collaboration_mode)
+        );
+        assert_eq!(model, expected_model);
+        assert_eq!(effort, Some(expected_effort.clone()));
+        if let Some(collaboration_mode) = collaboration_mode {
+            assert_eq!(collaboration_mode.model(), expected_model);
+            assert_eq!(collaboration_mode.reasoning_effort(), Some(expected_effort));
+        }
+        assert_eq!(chat.thread_id, Some(thread_id));
+
+        let turn_id = format!("turn-{index}");
+        handle_turn_started(&mut chat, &turn_id);
+        handle_turn_completed(&mut chat, &turn_id, /*duration_ms*/ None);
+    }
+}
+
+#[tokio::test]
+async fn disabled_auto_router_keeps_manually_selected_model() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(Some("gpt-5.6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+    chat.set_reasoning_effort(Some(ReasoningEffortConfig::Low));
+    chat.set_auto_model_router_enabled(false);
+
+    chat.submit_user_message(UserMessage::from(
+        "investigate this intermittent production deadlock",
+    ));
+
+    let (model, effort) = assert_matches!(
+        next_submit_op(&mut op_rx),
+        Op::UserTurn { model, effort, .. } => (model, effort)
+    );
+    assert_eq!(model, "gpt-5.6-sol");
+    assert_eq!(effort, Some(ReasoningEffortConfig::Low));
+}
+
+#[tokio::test]
+async fn auto_router_does_not_change_model_for_active_turn_steers() {
+    let (mut chat, _rx, mut op_rx) = make_chatwidget_manual(Some("gpt-5.6-sol")).await;
+    chat.thread_id = Some(ThreadId::new());
+    chat.set_reasoning_effort(Some(ReasoningEffortConfig::Low));
+    chat.set_auto_model_router_enabled(true);
+    handle_turn_started(&mut chat, "turn-1");
+
+    chat.submit_user_message(UserMessage::from(
+        "investigate this intermittent production deadlock",
+    ));
+
+    let (model, effort) = assert_matches!(
+        next_submit_op(&mut op_rx),
+        Op::UserTurn { model, effort, .. } => (model, effort)
+    );
+    assert_eq!(model, "gpt-5.6-sol");
+    assert_eq!(effort, Some(ReasoningEffortConfig::Low));
+}
+
+#[tokio::test]
 async fn user_submission_does_not_commit_recap_loading_to_history() {
     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
     chat.thread_id = Some(ThreadId::new());

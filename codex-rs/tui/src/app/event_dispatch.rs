@@ -1658,6 +1658,8 @@ impl App {
                 }
             }
             AppEvent::UpdateReasoningEffort(effort) => {
+                self.chat_widget.set_auto_model_router_enabled(false);
+                self.local_settings.tui.auto_model_routing = false;
                 self.on_update_reasoning_effort(effort.clone());
                 self.sync_active_thread_reasoning_setting(app_server, effort)
                     .await;
@@ -1667,6 +1669,8 @@ impl App {
                     .await;
             }
             AppEvent::UpdateModel(model) => {
+                self.chat_widget.set_auto_model_router_enabled(false);
+                self.local_settings.tui.auto_model_routing = false;
                 if self
                     .active_thread_model_setting_update_params(model.clone())
                     .is_some_and(|params| params.permissions.is_some())
@@ -1682,6 +1686,36 @@ impl App {
                         .await;
                     self.sync_active_thread_service_tier_to_cached_session()
                         .await;
+                }
+            }
+            AppEvent::SetAutoModelRouting(enabled) => {
+                self.chat_widget.set_auto_model_router_enabled(enabled);
+                self.local_settings.tui.auto_model_routing = enabled;
+                match crate::config_update::write_config_batch(
+                    app_server.request_handle(),
+                    vec![crate::config_update::replace_config_value(
+                        "tui.auto_model_routing",
+                        serde_json::json!(enabled),
+                    )],
+                )
+                .await
+                {
+                    Ok(_) => {
+                        let message = if enabled {
+                            "Automatic model routing enabled"
+                        } else {
+                            "Automatic model routing disabled"
+                        };
+                        self.chat_widget
+                            .add_info_message(message.to_string(), /*hint*/ None);
+                    }
+                    Err(err) => {
+                        let error = format_config_error(&err);
+                        tracing::error!(error = %error, "failed to persist auto model routing");
+                        self.chat_widget.add_error_message(format!(
+                            "Auto routing changed for this session but could not be saved: {error}"
+                        ));
+                    }
                 }
             }
             AppEvent::UpdatePersonality(personality) => {

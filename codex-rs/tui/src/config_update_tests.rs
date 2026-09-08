@@ -29,6 +29,18 @@ fn trusted_project_edit_targets_project_trust_level() {
     );
 }
 
+#[test]
+fn manual_model_selection_disables_auto_routing() {
+    assert_eq!(
+        build_model_selection_edits("gpt-5.6-terra", Some("medium")),
+        vec![
+            replace_config_value("model", serde_json::json!("gpt-5.6-terra")),
+            replace_config_value("model_reasoning_effort", serde_json::json!("medium")),
+            replace_config_value("tui.auto_model_routing", serde_json::json!(false)),
+        ]
+    );
+}
+
 #[tokio::test]
 async fn remote_project_trust_guards_thread_start_and_preserves_repository_decisions() -> Result<()>
 {
